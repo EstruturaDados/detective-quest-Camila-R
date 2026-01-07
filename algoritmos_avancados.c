@@ -1,47 +1,131 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-// Desafio Detective Quest
-// Tema 4 - Árvores e Tabela Hash
-// Este código inicial serve como base para o desenvolvimento das estruturas de navegação, pistas e suspeitos.
-// Use as instruções de cada região para desenvolver o sistema completo com árvore binária, árvore de busca e tabela hash.
+// Estrutura do nó da árvore (cômodo da mansão)
+typedef struct Node
+{
+    char name[50];
+    struct Node* left;
+    struct Node* right;
+} Node;
+
+// Cria dinamicamente uma sala da mansão
+Node* createRoom(char* name){
+    Node* room = (Node*)malloc(sizeof(Node));
+
+    if (room == NULL) {
+        printf("Erro ao alocar memória!\n");
+        exit(1);
+    }
+
+    strcpy(room->name, name);
+    room->left = NULL;
+    room->right = NULL;
+
+    return room;
+};
+
+// Função para explorar os cômodos da mansão
+void exploreRooms(struct Node* room){
+
+    if(room == NULL){
+        return;
+    }
+
+    printf("=====\n");
+    printf("Você está aqui: %s\n", room->name);
+    printf("=====\n");
+
+    // Verifica se é um nó-folha
+    if (room->left == NULL && room->right == NULL) {
+        printf("Este cômodo não possui mais caminhos.\n");
+        printf("Fim da exploração!\n");
+        return;
+    }
+
+    printf("Escolha um caminho:\n");
+
+    if (room->left != NULL)
+    {
+        printf("Digite 'E' para ir ao cômodo à esquerda\n");
+    }
+    
+    if (room->right != NULL)
+    {
+        printf("Digite 'D' para ir ao cômodo à direita\n");
+    }
+        
+    printf("Digite 'S' para sair da mansão\n");
+    printf("=====\n");
+
+    char choice;
+    scanf(" %c", &choice);
+
+    if(choice == 'E' || choice == 'e'){
+        exploreRooms(room->left);
+    } else if(choice == 'D' || choice == 'd'){
+        exploreRooms(room->right);
+    } else if(choice == 'S' || choice == 's'){
+        printf("Você saiu da mansão\n");
+        printf("Obrigado por jogar!\n");
+        return;
+    }
+     else {
+        printf("Escolha inválida! Tente novamente.\n");
+        exploreRooms(room);
+    }   
+
+}
 
 int main() {
 
-    // 🌱 Nível Novato: Mapa da Mansão com Árvore Binária
-    //
-    // - Crie uma struct Sala com nome, e dois ponteiros: esquerda e direita.
-    // - Use funções como criarSala(), conectarSalas() e explorarSalas().
-    // - A árvore pode ser fixa: Hall de Entrada, Biblioteca, Cozinha, Sótão etc.
-    // - O jogador deve poder explorar indo à esquerda (e) ou à direita (d).
-    // - Finalize a exploração com uma opção de saída (s).
-    // - Exiba o nome da sala a cada movimento.
-    // - Use recursão ou laços para caminhar pela árvore.
-    // - Nenhuma inserção dinâmica é necessária neste nível.
+    printf("=== Bem-vindo ao Detective Quest! ===\n");
 
-    // 🔍 Nível Aventureiro: Armazenamento de Pistas com Árvore de Busca
-    //
-    // - Crie uma struct Pista com campo texto (string).
-    // - Crie uma árvore binária de busca (BST) para inserir as pistas coletadas.
-    // - Ao visitar salas específicas, adicione pistas automaticamente com inserirBST().
-    // - Implemente uma função para exibir as pistas em ordem alfabética (emOrdem()).
-    // - Utilize alocação dinâmica e comparação de strings (strcmp) para organizar.
-    // - Não precisa remover ou balancear a árvore.
-    // - Use funções para modularizar: inserirPista(), listarPistas().
-    // - A árvore de pistas deve ser exibida quando o jogador quiser revisar evidências.
+    // Jardim -> Hall de entrada e Garagem
+    Node* root = createRoom("Jardim");
 
-    // 🧠 Nível Mestre: Relacionamento de Pistas com Suspeitos via Hash
-    //
-    // - Crie uma struct Suspeito contendo nome e lista de pistas associadas.
-    // - Crie uma tabela hash (ex: array de ponteiros para listas encadeadas).
-    // - A chave pode ser o nome do suspeito ou derivada das pistas.
-    // - Implemente uma função inserirHash(pista, suspeito) para registrar relações.
-    // - Crie uma função para mostrar todos os suspeitos e suas respectivas pistas.
-    // - Adicione um contador para saber qual suspeito foi mais citado.
-    // - Exiba ao final o “suspeito mais provável” baseado nas pistas coletadas.
-    // - Para hashing simples, pode usar soma dos valores ASCII do nome ou primeira letra.
-    // - Em caso de colisão, use lista encadeada para tratar.
-    // - Modularize com funções como inicializarHash(), buscarSuspeito(), listarAssociacoes().
+    root->left  = createRoom("Hall de entrada");
+    root->right = createRoom("Garagem");
+
+    // Hall de entrada -> Cozinha e Escada
+    root->left->left  = createRoom("Cozinha");
+    root->left->right = createRoom("Escada");
+
+    // Garagem -> Oficina e Lavanderia
+    root->right->left  = createRoom("Oficina");
+    root->right->right = createRoom("Lavanderia");
+
+    // Cozinha -> Sala de jantar e Despensa
+    root->left->left->left  = createRoom("Sala de jantar");
+    root->left->left->right = createRoom("Despensa");
+
+    // Escada -> Quarto e Biblioteca
+    root->left->right->left  = createRoom("Quarto");
+    root->left->right->right = createRoom("Biblioteca");
+
+    // Oficina -> Lavabo e Sala de jogos
+    root->right->left->left  = createRoom("Lavabo");
+    root->right->left->right = createRoom("Sala de jogos");
+
+    // Sala de jantar -> Lavabo e Sala de estar
+    root->left->left->left->left  = createRoom("Lavabo");
+    root->left->left->left->right = createRoom("Sala de estar");
+
+    // Quarto -> Banheiro e Closet
+    root->left->right->left->left  = createRoom("Banheiro");
+    root->left->right->left->right = createRoom("Closet");
+
+    // Biblioteca -> Escritório e Sala de música
+    root->left->right->right->left  = createRoom("Escritório");
+    root->left->right->right->right = createRoom("Sala de música");
+
+    // Sala de estar -> Terraço e Sala de TV
+    root->left->left->left->right->left  = createRoom("Terraço");
+    root->left->left->left->right->right = createRoom("Sala de TV");
+
+    // Inicia a exploração
+    exploreRooms(root);
 
     return 0;
 }
-
