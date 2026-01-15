@@ -6,12 +6,19 @@
 typedef struct Node
 {
     char name[50];
+    char tip[100];
     struct Node* left;
     struct Node* right;
 } Node;
 
+typedef struct TipNode {
+    char tip[100];
+    struct TipNode* left;
+    struct TipNode* right;
+} TipNode;
+
 // Cria dinamicamente uma sala da mansão
-Node* createRoom(char* name){
+Node* createRoom(char* name, char* tip){
     Node* room = (Node*)malloc(sizeof(Node));
 
     if (room == NULL) {
@@ -20,14 +27,51 @@ Node* createRoom(char* name){
     }
 
     strcpy(room->name, name);
+
+    if(tip){
+        strcpy(room->tip, tip);
+    } else{
+        room->tip[0] = '\0';
+    }
+
     room->left = NULL;
     room->right = NULL;
 
     return room;
 };
 
+//Função para inserir pista em ordem alfabética
+TipNode* insertTip(TipNode* root, char* tip){
+    if(root == NULL){
+        TipNode* new = (TipNode*)malloc(sizeof(TipNode));
+
+        strcpy(new->tip, tip);
+        new->left = NULL;
+        new->right = NULL;
+
+        return new;
+    }
+
+    if(strcmp(tip, root->tip) < 0){
+        root->left = insertTip(root->left, tip);
+    } else{
+        root->right = insertTip(root->right, tip);
+    }
+
+    return root;
+}
+
+// Função para exibir as pistas
+void viewTips(TipNode* root){
+    if(root == NULL) return;
+
+    viewTips(root->left);
+    printf("- %s\n", root->tip);
+    viewTips(root->right);
+}
+
 // Função para explorar os cômodos da mansão
-void exploreRooms(struct Node* room){
+void exploreRoomsWithTips(struct Node* room, TipNode** tipsCollected){
 
     if(room == NULL){
         return;
@@ -36,6 +80,13 @@ void exploreRooms(struct Node* room){
     printf("=====\n");
     printf("Você está aqui: %s\n", room->name);
     printf("=====\n");
+
+    // Coleta automática da pista
+    if(strlen(room->tip) > 0){
+        printf("Pista encontrada: %s\n", room->tip);
+        *tipsCollected = insertTip(*tipsCollected, room->tip);
+        room->tip[0] = '\0';
+    }
 
     // Verifica se é um nó-folha
     if (room->left == NULL && room->right == NULL) {
@@ -63,9 +114,9 @@ void exploreRooms(struct Node* room){
     scanf(" %c", &choice);
 
     if(choice == 'E' || choice == 'e'){
-        exploreRooms(room->left);
+        exploreRoomsWithTips(room->left, tipsCollected);
     } else if(choice == 'D' || choice == 'd'){
-        exploreRooms(room->right);
+        exploreRoomsWithTips(room->right, tipsCollected);
     } else if(choice == 'S' || choice == 's'){
         printf("Você saiu da mansão\n");
         printf("Obrigado por jogar!\n");
@@ -73,7 +124,7 @@ void exploreRooms(struct Node* room){
     }
      else {
         printf("Escolha inválida! Tente novamente.\n");
-        exploreRooms(room);
+        exploreRoomsWithTips(room, tipsCollected);
     }   
 
 }
@@ -83,49 +134,54 @@ int main() {
     printf("=== Bem-vindo ao Detective Quest! ===\n");
 
     // Jardim -> Hall de entrada e Garagem
-    Node* root = createRoom("Jardim");
+    Node* root = createRoom("Jardim", "Nenhuma pista");
 
-    root->left  = createRoom("Hall de entrada");
-    root->right = createRoom("Garagem");
+    root->left  = createRoom("Hall de entrada", "Pegadas de lama");
+    root->right = createRoom("Garagem", "Nenhuma pista");
 
     // Hall de entrada -> Cozinha e Escada
-    root->left->left  = createRoom("Cozinha");
-    root->left->right = createRoom("Escada");
+    root->left->left  = createRoom("Cozinha", "Faca suja de sangue");
+    root->left->right = createRoom("Escada", "Papel picado");
 
     // Garagem -> Oficina e Lavanderia
-    root->right->left  = createRoom("Oficina");
-    root->right->right = createRoom("Lavanderia");
+    root->right->left  = createRoom("Oficina", "Chave de fenda");
+    root->right->right = createRoom("Lavanderia", "Camiseta suja de sangue");
 
     // Cozinha -> Sala de jantar e Despensa
-    root->left->left->left  = createRoom("Sala de jantar");
-    root->left->left->right = createRoom("Despensa");
+    root->left->left->left  = createRoom("Sala de jantar", "Taça de vinho com batom");
+    root->left->left->right = createRoom("Despensa", "Nenhuma pista");
 
     // Escada -> Quarto e Biblioteca
-    root->left->right->left  = createRoom("Quarto");
-    root->left->right->right = createRoom("Biblioteca");
+    root->left->right->left  = createRoom("Quarto", "Remédio em comprimido");
+    root->left->right->right = createRoom("Biblioteca", "Livro sobre remédios");
 
     // Oficina -> Lavabo e Sala de jogos
-    root->right->left->left  = createRoom("Lavabo");
-    root->right->left->right = createRoom("Sala de jogos");
+    root->right->left->left  = createRoom("Lavabo", "Pia suja de sangue");
+    root->right->left->right = createRoom("Sala de jogos", "Nenhuma pista");
 
     // Sala de jantar -> Lavabo e Sala de estar
-    root->left->left->left->left  = createRoom("Lavabo");
-    root->left->left->left->right = createRoom("Sala de estar");
+    root->left->left->left->left  = createRoom("Lavabo", "Nenhuma pista");
+    root->left->left->left->right = createRoom("Sala de estar", "Almofadas bagunçadas");
 
     // Quarto -> Banheiro e Closet
-    root->left->right->left->left  = createRoom("Banheiro");
-    root->left->right->left->right = createRoom("Closet");
+    root->left->right->left->left  = createRoom("Banheiro", "Chuveiro sujo de sangue");
+    root->left->right->left->right = createRoom("Closet", "Roupas faltando");
 
     // Biblioteca -> Escritório e Sala de música
-    root->left->right->right->left  = createRoom("Escritório");
-    root->left->right->right->right = createRoom("Sala de música");
+    root->left->right->right->left  = createRoom("Escritório", "Computador aberto com e-mail aberto");
+    root->left->right->right->right = createRoom("Sala de música", "Nenhuma pista");
 
     // Sala de estar -> Terraço e Sala de TV
-    root->left->left->left->right->left  = createRoom("Terraço");
-    root->left->left->left->right->right = createRoom("Sala de TV");
+    root->left->left->left->right->left  = createRoom("Terraço", "Nenhuma pista");
+    root->left->left->left->right->right = createRoom("Sala de TV", "Televisão ligada");
+
+    TipNode* tipsCollected = NULL;
 
     // Inicia a exploração
-    exploreRooms(root);
+    exploreRoomsWithTips(root, &tipsCollected);
+
+    printf("\nPistas coletadas (ordem alfabética):\n");
+    viweTips(tipsCollected);
 
     return 0;
 }
