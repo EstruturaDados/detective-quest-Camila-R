@@ -2,23 +2,43 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Estrutura do nó da árvore (cômodo da mansão)
-typedef struct Node
-{
+#define TABLE_LENGTH 10
+
+/* =========================================================
+   ESTRUTURAS
+   ========================================================= */
+
+// Nó da árvore de cômodos
+typedef struct Node {
     char name[50];
     char tip[100];
     struct Node* left;
     struct Node* right;
 } Node;
 
+// Nó da árvore BST de pistas coletadas
 typedef struct TipNode {
     char tip[100];
     struct TipNode* left;
     struct TipNode* right;
 } TipNode;
 
-// Cria dinamicamente uma sala da mansão
-Node* createRoom(char* name, char* tip){
+// Nó da tabela hash (pista -> suspeito)
+typedef struct HashNode {
+    char tip[100];      
+    char suspect[100]; 
+    struct HashNode* next;
+} HashNode;
+
+// Tabela hash
+HashNode* hashTable[TABLE_LENGTH];
+
+/* =========================================================
+   FUNÇÕES DE CÔMODOS
+   ========================================================= */
+
+// cria dinamicamente um cômodo
+Node* createRoom(const char* name, const char* tip) {
     Node* room = (Node*)malloc(sizeof(Node));
 
     if (room == NULL) {
@@ -28,160 +48,212 @@ Node* createRoom(char* name, char* tip){
 
     strcpy(room->name, name);
 
-    if(tip){
+    if (tip != NULL)
         strcpy(room->tip, tip);
-    } else{
+    else
         room->tip[0] = '\0';
-    }
 
     room->left = NULL;
     room->right = NULL;
 
     return room;
-};
+}
 
-//Função para inserir pista em ordem alfabética
-TipNode* insertTip(TipNode* root, char* tip){
-    if(root == NULL){
-        TipNode* new = (TipNode*)malloc(sizeof(TipNode));
+/* =========================================================
+   FUNÇÕES DE PISTAS (BST)
+   ========================================================= */
 
-        strcpy(new->tip, tip);
-        new->left = NULL;
-        new->right = NULL;
-
-        return new;
+// insere pista em ordem alfabética (BST)
+TipNode* insertTip(TipNode* root, const char* tip) {
+    if (root == NULL) {
+        TipNode* node = (TipNode*)malloc(sizeof(TipNode));
+        strcpy(node->tip, tip);
+        node->left = NULL;
+        node->right = NULL;
+        return node;
     }
 
-    if(strcmp(tip, root->tip) < 0){
+    if (strcmp(tip, root->tip) < 0)
         root->left = insertTip(root->left, tip);
-    } else{
+    else if (strcmp(tip, root->tip) > 0)
         root->right = insertTip(root->right, tip);
-    }
 
     return root;
 }
 
-// Função para exibir as pistas
-void viewTips(TipNode* root){
-    if(root == NULL) return;
+// exibe pistas em ordem alfabética
+void viewTips(TipNode* root) {
+    if (root == NULL) return;
 
     viewTips(root->left);
     printf("- %s\n", root->tip);
     viewTips(root->right);
 }
 
-// Função para explorar os cômodos da mansão
-void exploreRoomsWithTips(struct Node* room, TipNode** tipsCollected){
+/* =========================================================
+   FUNÇÕES DE HASH
+   ========================================================= */
 
-    if(room == NULL){
-        return;
+// função hash simples
+int hashFunction(const char* key) {
+    int sum = 0;
+    for (int i = 0; key[i] != '\0'; i++)
+        sum += key[i];
+    return sum % TABLE_LENGTH;
+}
+
+// insere associação pista -> suspeito
+void insertOnHash(const char* tip, const char* suspect) {
+    int index = hashFunction(tip);
+
+    HashNode* node = (HashNode*)malloc(sizeof(HashNode));
+    strcpy(node->tip, tip);
+    strcpy(node->suspect, suspect);
+
+    node->next = hashTable[index];
+    hashTable[index] = node;
+}
+
+// busca suspeito associado a uma pista
+const char* findSuspect(const char* tip) {
+    int index = hashFunction(tip);
+    HashNode* current = hashTable[index];
+
+    while (current != NULL) {
+        if (strcmp(current->tip, tip) == 0)
+            return current->suspect;
+        current = current->next;
     }
+    return NULL;
+}
 
-    printf("=====\n");
-    printf("Você está aqui: %s\n", room->name);
-    printf("=====\n");
+/* =========================================================
+   EXPLORAÇÃO DA MANSÃO
+   ========================================================= */
 
-    // Coleta automática da pista
-    if(strlen(room->tip) > 0){
-        printf("Pista encontrada: %s\n", room->tip);
+void exploreRooms(Node* room, TipNode** tipsCollected) {
+
+    if (room == NULL) return;
+
+    printf("\n==============================\n");
+    printf("Você está em: %s\n", room->name);
+    printf("==============================\n");
+
+    // coleta pista automaticamente
+    if (strlen(room->tip) > 0 && strcmp(room->tip, "Nenhuma pista") != 0) {
+        printf("🔍 Pista encontrada: %s\n", room->tip);
         *tipsCollected = insertTip(*tipsCollected, room->tip);
-        room->tip[0] = '\0';
+        room->tip[0] = '\0'; // evita coleta duplicada
     }
 
-    // Verifica se é um nó-folha
-    if (room->left == NULL && room->right == NULL) {
-        printf("Este cômodo não possui mais caminhos.\n");
-        printf("Fim da exploração!\n");
-        return;
-    }
-
-    printf("Escolha um caminho:\n");
-
-    if (room->left != NULL)
-    {
-        printf("Digite 'E' para ir ao cômodo à esquerda\n");
-    }
-    
-    if (room->right != NULL)
-    {
-        printf("Digite 'D' para ir ao cômodo à direita\n");
-    }
-        
-    printf("Digite 'S' para sair da mansão\n");
-    printf("=====\n");
+    printf("\nEscolha um caminho:\n");
+    if (room->left)  printf("E - Esquerda\n");
+    if (room->right) printf("D - Direita\n");
+    printf("S - Sair\n");
+    printf("Opção: ");
 
     char choice;
     scanf(" %c", &choice);
 
-    if(choice == 'E' || choice == 'e'){
-        exploreRoomsWithTips(room->left, tipsCollected);
-    } else if(choice == 'D' || choice == 'd'){
-        exploreRoomsWithTips(room->right, tipsCollected);
-    } else if(choice == 'S' || choice == 's'){
-        printf("Você saiu da mansão\n");
-        printf("Obrigado por jogar!\n");
-        return;
+    if (choice == 'E' || choice == 'e')
+        exploreRooms(room->left, tipsCollected);
+    else if (choice == 'D' || choice == 'd')
+        exploreRooms(room->right, tipsCollected);
+    else if (choice == 'S' || choice == 's')
+        printf("\nVocê saiu da mansão.\n");
+    else {
+        printf("Opção inválida!\n");
+        exploreRooms(room, tipsCollected);
     }
-     else {
-        printf("Escolha inválida! Tente novamente.\n");
-        exploreRoomsWithTips(room, tipsCollected);
-    }   
-
 }
+
+/* =========================================================
+   JULGAMENTO FINAL
+   ========================================================= */
+
+int countEvidence(TipNode* root, const char* accused) {
+    if (root == NULL) return 0;
+
+    int count = 0;
+
+    count += countEvidence(root->left, accused);
+
+    const char* suspect = findSuspect(root->tip);
+    if (suspect && strcmp(suspect, accused) == 0)
+        count++;
+
+    count += countEvidence(root->right, accused);
+
+    return count;
+}
+
+void verifyFinalSuspect(TipNode* tipsCollected) {
+    char accused[100];
+
+    printf("\nQuem você acusa? ");
+    scanf(" %[^\n]", accused);
+
+    int evidence = countEvidence(tipsCollected, accused);
+
+    if (evidence >= 2)
+        printf("\n🔴 VEREDITO: %s é CULPADO (%d pistas).\n", accused, evidence);
+    else
+        printf("\n⚪ VEREDITO: provas insuficientes contra %s (%d pista(s)).\n",
+               accused, evidence);
+}
+
+/* =========================================================
+   MAIN
+   ========================================================= */
 
 int main() {
 
-    printf("=== Bem-vindo ao Detective Quest! ===\n");
+    // inicializa tabela hash
+    for (int i = 0; i < TABLE_LENGTH; i++)
+        hashTable[i] = NULL;
 
-    // Jardim -> Hall de entrada e Garagem
+    printf("=== Bem-vindo ao Detective Quest ===\n");
+
+    // Montagem da mansão
     Node* root = createRoom("Jardim", "Nenhuma pista");
 
     root->left  = createRoom("Hall de entrada", "Pegadas de lama");
     root->right = createRoom("Garagem", "Nenhuma pista");
 
-    // Hall de entrada -> Cozinha e Escada
     root->left->left  = createRoom("Cozinha", "Faca suja de sangue");
     root->left->right = createRoom("Escada", "Papel picado");
 
-    // Garagem -> Oficina e Lavanderia
     root->right->left  = createRoom("Oficina", "Chave de fenda");
     root->right->right = createRoom("Lavanderia", "Camiseta suja de sangue");
 
-    // Cozinha -> Sala de jantar e Despensa
     root->left->left->left  = createRoom("Sala de jantar", "Taça de vinho com batom");
     root->left->left->right = createRoom("Despensa", "Nenhuma pista");
 
-    // Escada -> Quarto e Biblioteca
     root->left->right->left  = createRoom("Quarto", "Remédio em comprimido");
     root->left->right->right = createRoom("Biblioteca", "Livro sobre remédios");
 
-    // Oficina -> Lavabo e Sala de jogos
     root->right->left->left  = createRoom("Lavabo", "Pia suja de sangue");
     root->right->left->right = createRoom("Sala de jogos", "Nenhuma pista");
 
-    // Sala de jantar -> Lavabo e Sala de estar
-    root->left->left->left->left  = createRoom("Lavabo", "Nenhuma pista");
     root->left->left->left->right = createRoom("Sala de estar", "Almofadas bagunçadas");
 
-    // Quarto -> Banheiro e Closet
-    root->left->right->left->left  = createRoom("Banheiro", "Chuveiro sujo de sangue");
-    root->left->right->left->right = createRoom("Closet", "Roupas faltando");
-
-    // Biblioteca -> Escritório e Sala de música
-    root->left->right->right->left  = createRoom("Escritório", "Computador aberto com e-mail aberto");
-    root->left->right->right->right = createRoom("Sala de música", "Nenhuma pista");
-
-    // Sala de estar -> Terraço e Sala de TV
-    root->left->left->left->right->left  = createRoom("Terraço", "Nenhuma pista");
-    root->left->left->left->right->right = createRoom("Sala de TV", "Televisão ligada");
+    // associa pistas a suspeitos
+    insertOnHash("Faca suja de sangue", "Marido");
+    insertOnHash("Pia suja de sangue", "Marido");
+    insertOnHash("Taça de vinho com batom", "Esposa");
+    insertOnHash("Livro sobre remédios", "Esposa");
+    insertOnHash("Chave de fenda", "Jardineiro");
 
     TipNode* tipsCollected = NULL;
 
-    // Inicia a exploração
-    exploreRoomsWithTips(root, &tipsCollected);
+    // exploração
+    exploreRooms(root, &tipsCollected);
 
-    printf("\nPistas coletadas (ordem alfabética):\n");
-    viweTips(tipsCollected);
+    // relatório final
+    printf("\n📂 Pistas coletadas:\n");
+    viewTips(tipsCollected);
+
+    verifyFinalSuspect(tipsCollected);
 
     return 0;
 }
